@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>CYBER IOS — Private Panel</title>
+<style>
+  :root{--bg:#030416;--panel:#071130;--neon:#a200ff;--green:#3de08a;--muted:#9fb5d1;--text:#e8f4ff}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{min-height:100vh;background:linear-gradient(180deg,#030416,#071130);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;color:var(--text);display:flex;align-items:center;justify-content:center;padding:18px;position:relative;overflow:hidden}
+  /* canvas bg */
+  canvas#bg{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;filter:drop-shadow(0 6px 18px rgba(162,0,255,0.06));}
+  .card{position:relative;z-index:2;width:min(940px,96vw);max-width:980px;border-radius:12px;padding:18px;background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);border:1px solid rgba(162,0,255,0.04);box-shadow:0 16px 48px rgba(2,6,20,0.6)}
+  .head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+  .brand{display:flex;align-items:center;gap:12px}
+  .logo{width:56px;height:56px;border-radius:10px;background:linear-gradient(135deg,#7f00ff,var(--neon));display:flex;align-items:center;justify-content:center;font-weight:900;color:#041026;font-size:20px}
+  h1{font-size:16px;margin:0}
+  .sub{color:var(--muted);font-size:13px}
+  .main{display:grid;grid-template-columns:1fr 440px;gap:16px}
+  @media(max-width:980px){ .main{grid-template-columns:1fr} }
+  .login{padding:12px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.01),transparent);border:1px solid rgba(255,255,255,0.02)}
+  label{display:block;color:var(--muted);font-size:13px;margin-bottom:6px}
+  input{width:100%;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:rgba(255,255,255,0.02);color:var(--text);outline:none;margin-bottom:8px}
+  .btn{display:inline-block;padding:10px 14px;border-radius:12px;background:linear-gradient(90deg,#3de08a,var(--neon));color:#041022;font-weight:900;text-decoration:none;border-bottom:4px solid rgba(0,0,0,0.18);cursor:pointer}
+  .info{font-size:13px;color:var(--muted);margin-top:8px}
+  .errline{color:#ffbdbd;background:rgba(255,80,80,0.04);padding:8px;border-radius:8px;margin-top:8px;border:1px solid rgba(255,80,80,0.06);display:none;font-weight:700}
+  .panel{padding:12px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.01),transparent);border:1px solid rgba(255,255,255,0.02);display:none}
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .status{display:flex;align-items:center;gap:10px;font-weight:900}
+  .led{width:12px;height:12px;border-radius:50%;background:#203227;border:1px solid rgba(255,255,255,0.03)}
+  .led.on{background:var(--green);box-shadow:0 0 8px rgba(61,224,138,0.18)}
+  .feature{padding:12px;border-radius:10px;background:linear-gradient(90deg,rgba(0,0,0,0.2),rgba(2,6,20,0.35));border:1px solid rgba(162,0,255,0.04)}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .toggle{width:66px;height:34px;border-radius:999px;position:relative;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.03);cursor:pointer}
+  .toggle .knob{position:absolute;top:3px;left:3px;width:28px;height:28px;border-radius:50%;background:#fff;transition:all .14s;box-shadow:0 6px 18px rgba(2,6,20,0.6)}
+  .toggle.on{background:linear-gradient(90deg,#7f00ff,var(--neon))}
+  .toggle.on .knob{transform:translateX(32px)}
+  .sl{margin-top:10px}
+  input[type=range]{-webkit-appearance:none;height:8px;border-radius:999px;background:linear-gradient(90deg,rgba(92,108,255,0.18),rgba(162,0,255,0.18));outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 6px 18px rgba(2,6,20,0.6);border:1px solid rgba(0,0,0,0.12)}
+  .num{font-weight:800;min-width:36px;text-align:right}
+  .codebox{margin-top:12px;border-radius:8px;padding:10px;background:linear-gradient(180deg,rgba(6,20,10,0.9),rgba(10,30,20,0.85));border:1px solid rgba(61,224,138,0.12);color:#bfffe2;font-family:monospace;height:220px;overflow:auto}
+  .code-empty{opacity:0.6;font-style:italic}
+  .actions{display:flex;justify-content:flex-end;gap:10px;margin-top:12px}
+  .btn-ghost{padding:8px 12px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted);cursor:pointer}
+  .notif{position:fixed;left:50%;transform:translateX(-50%);top:18px;padding:12px 16px;border-radius:12px;font-weight:800;z-index:200;color:#051026;background:linear-gradient(90deg,var(--neon),#7f00ff);box-shadow:0 12px 40px rgba(92,108,255,0.12);opacity:0;pointer-events:none;transition:all .28s}
+  .notif.show{opacity:1;top:28px;pointer-events:auto}
+  .notif.fail{background:linear-gradient(90deg,#ff8080,#ff4d6d);color:#230a0a}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+  <div class="card" role="application" aria-label="CYBER IOS Neon">
+    <div class="head">
+      <div class="brand"><div class="logo">M</div><div><h1>CYBER IOS</h1><div class="sub">Private Panel</div></div></div>
+      <div class="sub">by Mdzzfvx</div>
+    </div>
+
+    <div class="main">
+      <div>
+        <div class="login" id="loginArea" aria-hidden="false">
+          <div style="font-weight:900;margin-bottom:8px">Login Required</div>
+          <div class="info">Masukkan username & password.</div>
+          <div style="margin-top:12px">
+            <label for="user">Username</label>
+            <input id="user" type="text" autocomplete="off" placeholder="username" />
+            <label for="pass">Password</label>
+            <input id="pass" type="password" placeholder="password" />
+            <div class="errline" id="errline">username atau password salah</div>
+            <div style="display:flex;justify-content:flex-end;margin-top:10px">
+              <button id="loginBtn" class="btn">MASUK</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" id="panelArea" aria-hidden="true">
+          <div class="topbar">
+            <div class="brand"><div class="logo">M</div><div><h1>CYBER IOS</h1></div></div>
+            <div class="status"><div id="led" class="led"></div><div id="statusText">Online</div></div>
+          </div>
+
+          <div class="feature">
+            <div class="row"><div style="font-weight:900">Aim Settings</div><div id="aimToggle" class="toggle" role="switch" aria-checked="false" tabindex="0"><div class="knob"></div></div></div>
+
+            <div id="children" style="display:none">
+              <div class="sl">
+                <div class="muted">Stabilizer <span class="num" id="sensNum">50</span></div>
+                <input id="sens" type="range" min="0" max="100" value="50" />
+              </div>
+              <div class="sl">
+                <div class="muted">Aim Drag <span class="num" id="smoothNum">50</span></div>
+                <input id="smooth" type="range" min="0" max="100" value="50" />
+              </div>
+              <div class="sl">
+                <div class="muted">Recoil Control <span class="num" id="headNum">40</span></div>
+                <input id="head" type="range" min="0" max="80" value="40" />
+              </div>
+            </div>
+
+            <div class="codebox" id="codebox" aria-live="polite"><div id="codeEmpty" class="code-empty">Mdzzfvx_</div><div id="codeLines"></div></div>
+
+            <div class="actions">
+              <button id="saveBtn" class="btn-ghost">Save</button>
+              <button id="applyBtn" class="btn">Inject / Apply</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding:12px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.01),transparent);border:1px solid rgba(255,255,255,0.02)">
+        <div style="font-weight:900;margin-bottom:8px">Info</div>
+        <div class="muted">Panel ini adalah panel yang dibuat oleh <b >Mdzzfvx</b> as developer, fungsi panel ini adalah untuk memberikan pengalaman terbaru anda saat memainkan game Free Fire, dan membantu Aim anda agar lebih Presisi dan mudah untuk mendapatkan Headshot.<br><br></div>
+        <div style="margin-top:12px;font-size:13px;color:var(--muted)">
+          - Aktifkan Aim Settings untuk memunculkan fitur baru.<br>
+          - Tekan Inject / Apply untuk menerapkan (akan menampilkan notifikasi sukses jika fitur aktif).
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="notif" class="notif" role="status" aria-live="polite"></div>
+
+<script>
+/* Particle background (lightweight, blue neon) */
+const canvas = document.getElementById('bg');
+const ctx = canvas.getContext('2d');
+let W = innerWidth, H = innerHeight;
+function resize(){ W = innerWidth; H = innerHeight; canvas.width = W; canvas.height = H; initParticles(); }
+window.addEventListener('resize', resize);
+let particles = [];
+function R(a,b){ return Math.random()*(b-a)+a; }
+function initParticles(){
+  particles = [];
+  const count = Math.max(18, Math.round(W/80)); // adaptive ~ 18-40
+  for(let i=0;i<count;i++){
+    particles.push({
+      x: R(0,W), y: R(0,H),
+      r: R(0.8,2.8),
+      vx: R(-0.25,0.25), vy: R(-0.25,0.25),
+      a: R(0.3,0.9),
+      tw: R(120,360)
+    });
+  }
+}
+resize();
+let last = performance.now();
+function draw(){
+  requestAnimationFrame(draw);
+  const now = performance.now();
+  const dt = Math.min(40, now - last); last = now;
+  // dim background overlay
+  ctx.clearRect(0,0,W,H);
+  const g = ctx.createLinearGradient(0,0,W,H);
+  g.addColorStop(0,'rgba(2,8,20,0.45)'); g.addColorStop(1,'rgba(2,6,18,0.6)');
+  ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+  // draw particles and soft glow
+  for(const p of particles){
+    p.x += p.vx * (dt/16);
+    p.y += p.vy * (dt/16);
+    // wrap
+    if(p.x < -10) p.x = W+10; if(p.x > W+10) p.x = -10;
+    if(p.y < -10) p.y = H+10; if(p.y > H+10) p.y = -10;
+    // subtle pulsing
+    const pulse = 0.6 + 0.4 * Math.sin((now + p.tw) * 0.002);
+    ctx.beginPath();
+    ctx.fillStyle = `rgba(162,0,255,${p.a * 0.9})`;
+    ctx.arc(p.x, p.y, p.r * pulse, 0, Math.PI*2);
+    ctx.fill();
+    // glow
+    ctx.beginPath();
+    const gradient = ctx.createRadialGradient(p.x,p.y,p.r*0.2,p.x,p.y,p.r*6);
+    gradient.addColorStop(0,'rgba(162,0,255,0.18)');
+    gradient.addColorStop(1,'rgba(162,0,255,0.0)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(p.x - p.r*6, p.y - p.r*6, p.r*12, p.r*12);
+  }
+}
+draw();
+
+/* UI logic & sounds */
+const userField = document.getElementById('user');
+const passField = document.getElementById('pass');
+const loginBtn = document.getElementById('loginBtn');
+const errline = document.getElementById('errline');
+const loginArea = document.getElementById('loginArea');
+const panelArea = document.getElementById('panelArea');
+const led = document.getElementById('led');
+const statusText = document.getElementById('statusText');
+const aimToggle = document.getElementById('aimToggle');
+const children = document.getElementById('children');
+const sens = document.getElementById('sens');
+const smooth = document.getElementById('smooth');
+const head = document.getElementById('head');
+const sensNum = document.getElementById('sensNum');
+const smoothNum = document.getElementById('smoothNum');
+const headNum = document.getElementById('headNum');
+const codeLines = document.getElementById('codeLines');
+const codeEmpty = document.getElementById('codeEmpty');
+const codebox = document.getElementById('codebox');
+const applyBtn = document.getElementById('applyBtn');
+const notif = document.getElementById('notif');
+const saveBtn = document.getElementById('saveBtn');
+
+const VALID_USER = 'zaskia';
+const VALID_PASS = '18';
+
+let AudioCtx = null;
+function ensureAudio(){ if(!AudioCtx){ try{ AudioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ AudioCtx = null; } } }
+function playTone(freq,dur=0.08,type='sine',vol=0.12){
+  ensureAudio(); if(!AudioCtx) return;
+  const o = AudioCtx.createOscillator(); const g = AudioCtx.createGain();
+  o.type = type; o.frequency.value = freq; g.gain.value = vol;
+  o.connect(g); g.connect(AudioCtx.destination);
+  g.gain.exponentialRampToValueAtTime(0.0001,AudioCtx.currentTime+dur);
+  o.start(); o.stop(AudioCtx.currentTime+dur+0.02);
+}
+function clickSound(){ playTone(720,0.04,'square',0.06); }
+function successSound(){ playTone(640,0.12,'sine',0.12); setTimeout(()=>playTone(880,0.10,'sine',0.10),90); }
+function failSound(){ playTone(260,0.12,'sawtooth',0.14); setTimeout(()=>playTone(180,0.10,'sawtooth',0.12),90); }
+
+function showNotif(text, type='success', ms=1400){
+  notif.className='notif'; notif.textContent = text;
+  if(type==='fail') notif.classList.add('fail');
+  notif.classList.add('show');
+  if(type==='success') successSound();
+  if(type==='fail') failSound();
+  setTimeout(()=>{ notif.classList.remove('show'); notif.classList.remove('fail'); }, ms);
+}
+
+loginBtn.addEventListener('click', (e)=>{
+  ensureAudio(); if(AudioCtx && AudioCtx.state==='suspended') AudioCtx.resume();
+  clickSound();
+  const u = (userField.value||'').trim(); const p = (passField.value||'').trim();
+  if(!u || !p){ errline.textContent = 'Username & password tidak boleh kosong'; errline.style.display='block'; failSound(); return; }
+  if(u === VALID_USER && p === VALID_PASS){
+    errline.style.display='none';
+    loginArea.style.display='none';
+    panelArea.style.display='block';
+    led.classList.add('on');
+    statusText.textContent = 'Online';
+    showNotif('Login berhasil • Panel terbuka','success',1400);
+  } else {
+    errline.textContent = 'username atau password salah'; errline.style.display='block';
+    showNotif('salah','fail',1200);
+  }
+});
+
+aimToggle.addEventListener('click', ()=>{
+  clickSound();
+  const willOn = !aimToggle.classList.contains('on');
+  if(willOn){ aimToggle.classList.add('on'); aimToggle.setAttribute('aria-checked','true'); children.style.display='block'; startCodeStream(); }
+  else { aimToggle.classList.remove('on'); aimToggle.setAttribute('aria-checked','false'); children.style.display='none'; stopCodeStream(); }
+});
+
+function bindRange(el, display){ el.addEventListener('input', ()=>{ display.textContent = el.value; }); }
+bindRange(sens,sensNum); bindRange(smooth,smoothNum); bindRange(head,headNum);
+
+let codeInterval = null;
+function startCodeStream(){
+  codeEmpty.style.display='none';
+  codeLines.innerHTML='';
+  let i=0;
+  codeInterval = setInterval(()=>{
+    const lines = [
+      `module.init('aim_settings');`,
+      `stabilizer = ${sens.value};`,
+      `aim.drag = ${smooth.value};`,
+      `recoil.control = ${head.value};`,
+      `hook.render_loop();`,
+      `secure_channel();`,
+      `verify_checksums();`,
+      `apply_patch_safe();`
+    ];
+    const count = Math.random() < 0.6 ? 1 : 2;
+    for(let k=0;k<count;k++){
+      const pick = lines[Math.floor(Math.random()*lines.length)];
+      const d = document.createElement('div'); d.textContent = pick; codeLines.appendChild(d);
+    }
+    codebox.scrollTop = codebox.scrollHeight;
+    while(codeLines.childElementCount > 24) codeLines.removeChild(codeLines.firstChild);
+    i++; if(i>999999) i=0;
+  }, 240);
+}
+function stopCodeStream(){
+  if(codeInterval){ clearInterval(codeInterval); codeInterval = null; }
+  Array.from(codeLines.children).forEach(ch=>ch.style.opacity='0.5');
+  if(codeLines.childElementCount === 0) codeEmpty.style.display='block';
+}
+
+applyBtn.addEventListener('click', async ()=>{
+  ensureAudio(); if(AudioCtx && AudioCtx.state==='suspended') AudioCtx.resume();
+  clickSound();
+  showNotif('Applying features — processing...', 'loading', 1200);
+  await new Promise(r=>setTimeout(r,800));
+  const active = aimToggle.classList.contains('on');
+  if(active){ showNotif('Apply sukses • fitur aktif','success',1400); led.classList.add('on'); statusText.textContent='Online'; }
+  else { showNotif('Tidak ada fitur aktif • gagal','fail',1400); led.classList.remove('on'); statusText.textContent='Offline'; }
+});
+
+saveBtn.addEventListener('click', ()=>{ clickSound(); showNotif('Preset tersimpan (lokal)','success',1100); });
+
+['click','touchstart','keydown'].forEach(ev=>{ window.addEventListener(ev, ()=>{ ensureAudio(); if(AudioCtx && AudioCtx.state==='suspended') AudioCtx.resume(); }, {once:true}); });
+
+// init
+(function init(){
+  panelArea.style.display='none';
+  codeEmpty.style.display='block';
+  codeLines.innerHTML='';
+  led.classList.remove('on');
+  // small initial particle tweak already done in initParticles via resize
+})();
+
+</script>
+</body>
+</html>
